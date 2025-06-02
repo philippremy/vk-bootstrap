@@ -163,7 +163,7 @@ class VulkanFunctions {
         // GetProcAddress returns FARPROC, so need to cast it into a void* which can safely be cast to T
         func_dest = reinterpret_cast<T>(reinterpret_cast<void*>(GetProcAddress(library, func_name)));
 #elif defined(STATIC_VULKAN)
-        if(func_name == "vkGetInstanceProcAddr") {
+        if(strcmp(func_name, "vkGetInstanceProcAddr") == 0) {
             func_dest = &vkGetInstanceProcAddr;
         } else {
             assert(false && "Unimplemented!");
