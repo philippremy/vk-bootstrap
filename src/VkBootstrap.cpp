@@ -16,7 +16,13 @@
 
 #include "VkBootstrap.h"
 
+#include <vulkan/vulkan_core.h>
+
 #include <cstring>
+
+#if defined(STATIC_VULKAN)
+    extern "C" PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance, const char*);
+#endif
 
 #if defined(_WIN32)
 #include <fcntl.h>
@@ -131,29 +137,37 @@ class VulkanFunctions {
         if (library) {
             return true;
         }
-#if defined(__linux__) || defined(__FreeBSD__)
+#if (defined(__linux__) || defined(__FreeBSD__)) && !defined(STATIC_VULKAN)
         library = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
         if (!library) library = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-#elif defined(__APPLE__)
+        if (!library) return false;
+#elif defined(__APPLE__) && !defined(STATIC_VULKAN)
         library = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
         if (!library) library = dlopen("libvulkan.1.dylib", RTLD_NOW | RTLD_LOCAL);
         if (!library) library = dlopen("libMoltenVK.dylib", RTLD_NOW | RTLD_LOCAL);
-#elif defined(_WIN32)
+        if (!library) return false;
+#elif defined(_WIN32) && !defined(STATIC_VULKAN)
         library = LoadLibrary(TEXT("vulkan-1.dll"));
-#else
+        if (!library) return false;
+#elif !defined(STATIC_VULKAN)
         assert(false && "Unsupported platform");
 #endif
-        if (!library) return false;
         load_func(ptr_vkGetInstanceProcAddr, "vkGetInstanceProcAddr");
         return ptr_vkGetInstanceProcAddr != nullptr;
     }
 
     template <typename T> void load_func(T& func_dest, const char* func_name) {
-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+#if (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)) && !defined(STATIC_VULKAN)
         func_dest = reinterpret_cast<T>(dlsym(library, func_name));
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(STATIC_VULKAN)
         // GetProcAddress returns FARPROC, so need to cast it into a void* which can safely be cast to T
         func_dest = reinterpret_cast<T>(reinterpret_cast<void*>(GetProcAddress(library, func_name)));
+#elif defined(STATIC_VULKAN)
+        if(func_name == "vkGetInstanceProcAddr") {
+            func_dest = &vkGetInstanceProcAddr;
+        } else {
+            assert(false && "Unimplemented!");
+        }
 #endif
     }
     void close() {

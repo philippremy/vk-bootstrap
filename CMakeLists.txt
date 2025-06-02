@@ -13,6 +13,12 @@ option(VK_BOOTSTRAP_WERROR "Enable warnings as errors during compilation" OFF)
 option(VK_BOOTSTRAP_TEST "Test Vk-Bootstrap using Catch2 as well as build examples" ${PROJECT_IS_TOP_LEVEL})
 option(VK_BOOTSTRAP_INSTALL "Enable installing of vk-bootstrap" ${PROJECT_IS_TOP_LEVEL})
 
+option(VK_BOOTSTRAP_STATIC_VULKAN "If Vulkan will be linked statically, so no dlopen() will occur." ON)
+
+if(VK_BOOTSTRAP_STATIC_VULKAN)
+    add_definitions(-DSTATIC_VULKAN)
+endif()
+
 set(VK_BOOTSTRAP_VULKAN_HEADER_DIR "" CACHE FILEPATH "Specify the location of the Vulkan-Headers include directory.")
 mark_as_advanced(VK_BOOTSTRAP_VULKAN_HEADER_DIR)
 
